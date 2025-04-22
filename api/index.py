@@ -72,7 +72,7 @@ async def fetch_download_link_async(url):
                     'root': '1'
                 }
 
-                async with session.get('https://www.1024tera.com/share/list', params=params) as response2:
+                async with session.get('https://www.terabox.com/share/list', params=params) as response2:
                     response_data2 = await response2.json()
                     if 'list' not in response_data2:
                         return None
@@ -87,7 +87,7 @@ async def fetch_download_link_async(url):
                         params.pop('desc')
                         params.pop('root')
 
-                        async with session.get('https://www.1024tera.com/share/list', params=params) as response3:
+                        async with session.get('https://www.terabox.com/share/list', params=params) as response3:
                             response_data3 = await response3.json()
                             if 'list' not in response_data3:
                                 return None
