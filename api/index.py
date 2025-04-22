@@ -5,6 +5,7 @@ import asyncio
 import logging
 from urllib.parse import parse_qs, urlparse
 from requests import Session
+import requests
 
 app = Flask(__name__)
 
