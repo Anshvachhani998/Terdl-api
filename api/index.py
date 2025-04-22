@@ -134,9 +134,15 @@ async def format_message(link_data):
     file_name = link_data["server_filename"]
     file_size = await get_formatted_size_async(link_data["size"])
     download_link = link_data["dlink"]
-    r = requests.Session()
-    response = r.head(link_data["list"][0]["dlink"], headers=headersList)
-    direct_link = response.headers.get("location")
+
+    # Get direct fast download link using HEAD request
+    try:
+        r = requests.Session()
+        response = r.head(download_link, headers=headers, allow_redirects=False)
+        direct_link = response.headers.get("Location")
+    except Exception as e:
+        direct_link = None
+
     return {
         'Title': file_name,
         'Size': file_size,
@@ -144,6 +150,7 @@ async def format_message(link_data):
         'fast_link': direct_link,
         'Thumbnails': thumbnails
     }
+    
 
 
 @app.route('/')
