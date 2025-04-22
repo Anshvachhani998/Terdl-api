@@ -135,7 +135,7 @@ async def format_message(link_data):
     file_size = await get_formatted_size_async(link_data["size"])
     download_link = link_data["dlink"]
     r = requests.Session()
-    response = r.head(r_j["list"][0]["dlink"], headers=headersList)
+    response = r.head(link_data["list"][0]["dlink"], headers=headersList)
     direct_link = response.headers.get("location")
     return {
         'Title': file_name,
