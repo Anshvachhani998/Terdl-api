@@ -4,6 +4,7 @@ import aiohttp
 import asyncio
 import logging
 from urllib.parse import parse_qs, urlparse
+from requests import Session
 
 app = Flask(__name__)
 
@@ -132,10 +133,14 @@ async def format_message(link_data):
     file_name = link_data["server_filename"]
     file_size = await get_formatted_size_async(link_data["size"])
     download_link = link_data["dlink"]
+    r = requests.Session()
+    response = r.head(r_j["list"][0]["dlink"], headers=headersList)
+    direct_link = response.headers.get("location")
     return {
         'Title': file_name,
         'Size': file_size,
         'Direct Download Link': download_link,
+        'fast_link': direct_link,
         'Thumbnails': thumbnails
     }
 
