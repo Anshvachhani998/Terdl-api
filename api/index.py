@@ -9,6 +9,8 @@ import requests
 
 app = Flask(__name__)
 
+COOKIES = 'cookies.txt'
+
 # Replace with your working cookies
 cookies = {
     'PANWEB': '1',
@@ -43,7 +45,7 @@ def find_between(string, start, end):
 
 async def fetch_download_link_async(url):
     try:
-        async with aiohttp.ClientSession(cookies=cookies, headers=headers) as session:
+        async with aiohttp.ClientSession(cookies=COOKIES, headers=headers) as session:
             async with session.get(url) as response1:
                 response1.raise_for_status()
                 response_data = await response1.text()
