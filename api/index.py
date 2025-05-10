@@ -4,25 +4,11 @@ import aiohttp
 import asyncio
 import logging
 from urllib.parse import parse_qs, urlparse
-from requests import Session
 import requests
 
 app = Flask(__name__)
 
-COOKIES = 'cookies.txt'
-
-# Replace with your working cookies
-cookies = {
-    'PANWEB': '1',
-    'browserid': '45Cbkepkx0J0bqgQi1e1ubtbstmebahkYOYm3ZWuIktZFHaUuRjvdeeHz24=',
-    'lang': 'en',
-    '__bid_n': '196b885ed7339790814207',
-    'ndut_fmt': 'D0FAFCA1EE8E0849073305E0A24E15011CD805D3FFDB8750AE28A9FF2A66E9A3',
-    '__stripe_mid': '31fc92f3-a12a-480f-9e44-53f30f08258a75588e',
-    'csrfToken': '7FTX6x-Gx7LCGACU9p9UBu4k',
-    '__stripe_sid': '819514d7-74d2-4e38-ac6b-ce7fba033beee47139',
-    'ndus': 'YdZTyX1peHuimlux_D6dLGQBeHmj0r3M3trkunHB',
-}
+COOKIES_FILE = 'cookies.txt'
 
 headers = {
     'Referer': 'https://www.terabox.com/',
@@ -37,15 +23,30 @@ headers = {
     'Sec-Fetch-User': '?1',
     'Priority': 'u=0, i',
 }
+
+
 def find_between(string, start, end):
     start_index = string.find(start) + len(start)
     end_index = string.find(end, start_index)
     return string[start_index:end_index]
 
 
+def load_cookies():
+    cookies_dict = {}
+    if os.path.exists(COOKIES_FILE):
+        with open(COOKIES_FILE, 'r') as f:
+            for line in f:
+                if not line.strip() or line.startswith('#'):
+                    continue
+                parts = line.strip().split('\t')
+                if len(parts) >= 7:
+                    cookies_dict[parts[5]] = parts[6]
+    return cookies_dict
+
+
 async def fetch_download_link_async(url):
     try:
-        async with aiohttp.ClientSession(cookies=COOKIES, headers=headers) as session:
+        async with aiohttp.ClientSession(cookies=load_cookies(), headers=headers) as session:
             async with session.get(url) as response1:
                 response1.raise_for_status()
                 response_data = await response1.text()
@@ -56,7 +57,8 @@ async def fetch_download_link_async(url):
                     return None
 
                 request_url = str(response1.url)
-                surl = request_url.split('surl=')[1]
+                surl = request_url.split('surl=')[-1]
+
                 params = {
                     'app_id': '250528',
                     'web': '1',
@@ -75,12 +77,13 @@ async def fetch_download_link_async(url):
 
                 async with session.get('https://www.terabox.com/share/list', params=params) as response2:
                     response_data2 = await response2.json()
-                    if 'list' not in response_data2:
+                    if 'list' not in response_data2 or not response_data2['list']:
                         return None
 
-                    if response_data2['list'][0]['isdir'] == "1":
+                    first_item = response_data2['list'][0]
+                    if int(first_item.get('isdir', 0)) == 1:
                         params.update({
-                            'dir': response_data2['list'][0]['path'],
+                            'dir': first_item['path'],
                             'order': 'asc',
                             'by': 'name',
                             'dplogid': log_id
@@ -95,8 +98,8 @@ async def fetch_download_link_async(url):
                             return response_data3['list']
 
                     return response_data2['list']
-    except aiohttp.ClientResponseError as e:
-        print(f"Error fetching download link: {e}")
+    except Exception as e:
+        print(f"[Error] fetch_download_link_async: {e}")
         return None
 
 
@@ -120,8 +123,8 @@ async def get_formatted_size_async(size_bytes):
         unit = "MB" if size_bytes >= 1024 * 1024 else ("KB" if size_bytes >= 1024 else "bytes")
         return f"{size:.2f} {unit}"
     except Exception as e:
-        print(f"Error getting formatted size: {e}")
-        return None
+        print(f"[Error] get_formatted_size_async: {e}")
+        return "Unknown"
 
 
 async def format_message(link_data):
@@ -136,13 +139,13 @@ async def format_message(link_data):
     file_size = await get_formatted_size_async(link_data["size"])
     download_link = link_data["dlink"]
 
-    # Get direct fast download link using HEAD request
+    # Try to get fast direct link
     try:
-        r = requests.Session()
-        response = r.head(download_link, headers=headers, allow_redirects=False)
-        direct_link = response.headers.get("Location")
+        response = requests.get(download_link, headers=headers, allow_redirects=True, stream=True, timeout=10)
+        direct_link = response.url
     except Exception as e:
         direct_link = None
+        print(f"[Error] Getting fast link: {e}")
 
     return {
         'Title': file_name,
@@ -151,14 +154,13 @@ async def format_message(link_data):
         'fast_link': direct_link,
         'Thumbnails': thumbnails
     }
-    
 
 
 @app.route('/')
 def home():
     return {
         'status': 'success',
-        'message': 'Working Fully',
+        'message': 'Working Fully ✅',
         'Contact': '@ftmdeveloperz || @ftmdeveloperr'
     }
 
@@ -167,7 +169,7 @@ def home():
 async def help():
     return {
         'Info': 'Use the API like this:',
-        'Example': 'https://yourdomain.com/api?link=https://1024terabox.com/s/example'
+        'Example': 'https://yourdomain.com/api?link=https://terabox.com/s/example'
     }
 
 
@@ -185,7 +187,7 @@ async def api():
             tasks = [format_message(item) for item in link_data]
             formatted_message = await asyncio.gather(*tasks)
         else:
-            formatted_message = {'status': 'error', 'message': 'No data found for the provided link'}
+            return jsonify({'status': 'error', 'message': 'No data found for the provided link', 'Link': url})
 
         return jsonify({
             'ShortLink': url,
@@ -200,6 +202,7 @@ async def api():
             'message': str(e),
             'Link': request.args.get('link') or request.args.get('url')
         })
+
 
 if __name__ == '__main__':
     app.run(debug=True)
