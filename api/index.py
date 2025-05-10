@@ -12,14 +12,14 @@ app = Flask(__name__)
 # Replace with your working cookies
 cookies = {
     'PANWEB': '1',
-    'browserid': 'LIcG5gnjd4bOoF7jVUn_1FB4G1-j5fArTpoOSruTfkTFJvI_g4MzOPkG-BE=',
+    'browserid': '45Cbkepkx0J0bqgQi1e1ubtbstmebahkYOYm3ZWuIktZFHaUuRjvdeeHz24=',
     'lang': 'en',
     '__bid_n': '196b885ed7339790814207',
-    'ndut_fmt': '7A872BE2129F6B13A80A9916860B22FB209AB446643591C4438EA8243DAA02C1',
-    '__stripe_mid': 'b85d61d2-4812-4eeb-8e41-b1efb3fa2a002a54d5',
-    'csrfToken': 'FG1s4DRQ7Smd4xl9-jpYcz4f',
-    '__stripe_sid': 'e8fd1495-017f-4f05-949c-7cb3a1c780fed92613',
-    'ndus': 'YdZTyX1peHuigYYPUsTqgsGZULZ-eb2ZczrIytvZ',
+    'ndut_fmt': 'D0FAFCA1EE8E0849073305E0A24E15011CD805D3FFDB8750AE28A9FF2A66E9A3',
+    '__stripe_mid': '31fc92f3-a12a-480f-9e44-53f30f08258a75588e',
+    'csrfToken': '7FTX6x-Gx7LCGACU9p9UBu4k',
+    '__stripe_sid': '819514d7-74d2-4e38-ac6b-ce7fba033beee47139',
+    'ndus': 'YdZTyX1peHuimlux_D6dLGQBeHmj0r3M3trkunHB',
 }
 
 headers = {
@@ -34,8 +34,6 @@ headers = {
     'Sec-Fetch-User': '?1',
     'Priority': 'u=0, i',
 }
-
-
 def find_between(string, start, end):
     start_index = string.find(start) + len(start)
     end_index = string.find(end, start_index)
