@@ -9,7 +9,19 @@ import requests
 
 app = Flask(__name__)
 
-# Replace with your working cookies
+
+AUTHORIZED_CODES = [
+    "ansh123",
+    "ftm321",
+    "code786",
+    "terabox99",
+    "vps777",
+    "secret101",
+    "junagadh2025",
+    "ftmdev@api"
+]
+
+
 cookies = {
     'PANWEB': '1',
     'browserid': 'p4nVrnlkUVKcnbbJHnIClAhSL5uXs01e-0svx0bm7KHLUB6wIVvCUNGLIpU=',
@@ -173,6 +185,10 @@ async def help():
 @app.route('/api', methods=['GET'])
 async def api():
     try:
+        access_code = request.args.get('code')
+        if access_code not in AUTHORIZED_CODES:
+            return jsonify({'status': 'error', 'message': 'Unauthorized access. Invalid code.', 'Link': None})
+
         # Accept both `link` and `url`
         url = request.args.get('link') or request.args.get('url')
         if not url:
