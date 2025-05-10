@@ -23,16 +23,19 @@ AUTHORIZED_CODES = [
 
 
 cookies = {
-    'PANWEB': '1',
-    'browserid': 'p4nVrnlkUVKcnbbJHnIClAhSL5uXs01e-0svx0bm7KHLUB6wIVvCUNGLIpU=',
+    'ndus': 'YdZTyX1peHuigYYPUsTqgsGZULZ-eb2ZczrIytvZ',
+    'ndut_fmt': 'F098715D4C56B1FE6EC126EF18922FFC9B0638DF2B642A62D37971B89F5871A7',
+    'browserid': 'LIcG5gnjd4bOoF7jVUn_1FB4G1-j5fArTpoOSruTfkTFJvI_g4MzOPkG-BE=',
+    '_ga': 'GA1.1.520080140.1746853034',
+    '_ga_06ZNKL8C2E': 'GS2.1.s1746853033$o1$g1$t1746853361$j60$l0$h0',
+    'ab_ymg_result': '{"data":"da8926eb8716ff12c51c9bf40086f24127c2e3126b3a8c66530a42d50daa40797711e2873fe863d994f415fc0335acaddfb3aaeae3cc0a05231c5ffff2168e9b6f0aadbd833774602694a2e0fb899e27ca7e5aa108da809a42d639020c86fc40a4e654c247c7540d7f1d0351c9fcc8ddc5552b1725e3fd561dd7da231b71da32","key_id":"66","sign":"df7288fe"}',
+    'csrfToken': 'FG1s4DRQ7Smd4xl9-jpYcz4f',
+    '__bid_n': '196b885ed7339790814207',
+    'ab_sr': '1.0.1_YTE2YmFhNjM5YzdkMzM2ZmNjYWI4Yjg3ZjYzYmNhMGQyMmVkYjA1YThlNGY3ZjBiNzE5NjIxMmFlZGViODc5YWI5MDZlNWMzOGYxZDNlODVhMjg5NzE4NmY5OTNmOTRiMzUxNTdiZTk0NTVlMTAxYTRjOTE5NGQ3OTY5NmZjZjgzYzk0MGJlMDljN2I3NmJkYmExYzQzZGIyNDczMWU5Ng==',
     'lang': 'en',
-    '__bid_n': '1900b9f02442253dfe4207',
-    'ndut_fmt': 'BE5EF02E4FBDA93F542338752E051A84DEF30C5E3CBBF98408453BFE5D65FFE4',
-    '__stripe_mid': 'b85d61d2-4812-4eeb-8e41-b1efb3fa2a002a54d5',
-    'csrfToken': 'xknOoriwpXbwXMVswJ7kv1M7',
-    '__stripe_sid': 'e8fd1495-017f-4f05-949c-7cb3a1c780fed92613',
-    'ndus': 'YylKpiCteHuiYEqq8n75Tb-JhCqmg0g4YMH03MYD',
+    'TSID': 'UpjfKdxM5uYyISlGPUGknRioYswY5qq4',
 }
+
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0',
@@ -46,7 +49,6 @@ headers = {
     'Sec-Fetch-User': '?1',
     'Priority': 'u=0, i',
 }
-
 
 def find_between(string, start, end):
     start_index = string.find(start) + len(start)
