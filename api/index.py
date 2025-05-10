@@ -187,10 +187,6 @@ async def help():
 @app.route('/api', methods=['GET'])
 async def api():
     try:
-        access_code = request.args.get('code')
-        if access_code not in AUTHORIZED_CODES:
-            return jsonify({'status': 'error', 'message': 'Unauthorized access. Invalid code.', 'Link': None})
-
         # Accept both `link` and `url`
         url = request.args.get('link') or request.args.get('url')
         if not url:
