@@ -174,7 +174,6 @@ async def help():
 @app.route('/api', methods=['GET'])
 async def api():
     try:
-        # Accept both `link` and `url`
         url = request.args.get('link') or request.args.get('url')
         if not url:
             return jsonify({'status': 'error', 'message': 'No link or url parameter provided', 'Link': None})
@@ -186,7 +185,7 @@ async def api():
             tasks = [format_message(item) for item in link_data]
             formatted_message = await asyncio.gather(*tasks)
         else:
-            formatted_message = None
+            formatted_message = {'status': 'error', 'message': 'No data found for the provided link'}
 
         return jsonify({
             'ShortLink': url,
@@ -201,7 +200,6 @@ async def api():
             'message': str(e),
             'Link': request.args.get('link') or request.args.get('url')
         })
-
 
 if __name__ == '__main__':
     app.run(debug=True)
