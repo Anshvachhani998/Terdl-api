@@ -25,13 +25,13 @@ app = Flask(__name__)
 #WORKING COOKIES
 cookies = {
     'PANWEB': '1',
-    'browserid': '45Cbkepkx0J0bqgQi1e1ubtbstmebahkYOYm3ZWuIktZFHaUuRjvdeeHz24=',
+    'browserid': 'JOsoSDqBLH63S57CpkWso6wlIl09rlscogNcktwZ_q-vtjq1tYYDItZH_-M=',
     'lang': 'en',
-    '__bid_n': '196b885ed7339790814207',
-    'ndut_fmt': '26BE3C564003BEB97F4ED69DEBD9974F6291C708F2B2B419F0B6282675131E1C',
+    '__bid_n': '196d9168d1d76226be4207',
+    'ndut_fmt': '811C3EF9FEB1A698D45780FF5724B1C3830C0F7B75FD18E35B82A1DD5DB0FFC6',
     '__stripe_mid': '31fc92f3-a12a-480f-9e44-53f30f08258a75588e',
     'ndus': 'YdZTyX1peHuimlux_D6dLGQBeHmj0r3M3trkunHB',
-    'csrfToken': 'C84Gc54sleTMoZxBx24k4SM7',
+    'csrfToken': 'Dwk1sMVb--fAc6ID1ivmRYvU',
 }
 
 
