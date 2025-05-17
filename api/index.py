@@ -8,46 +8,18 @@ from urllib.parse import parse_qs, urlparse
 
 app = Flask(__name__)
 
-#UNWORKING COOKIES JUST FOR DEMO
-# cookies = {
-#     'ndut_fmt': 'C96770F2F5849984C2BA2A3F6284E3769F4147D175CD113DA30A8F2DE4CCD1FF',
-#     'ndus': 'YvdD63MteHuiw0IgOC3Kdp-b5nahyIkzD_XdJDj2',
-#     '__bid_n': '1900b9f02442253dfe4207',
-#     '__stripe_mid': 'f5763c3a-0bc5-455f-8bbc-ef5a3a30f25d212bf2',
-#     '__stripe_sid': '74502fe5-8572-4d7d-8171-6b47b1c5faf170be67',
-#     'browserid': 'ujWfJR9sAO3NO7oCPbQ5IF_P6feJPiSxonWQoahA05CtJ1XhBmDy8oEXuDs=',
-#     'csrfToken': 'X-KjyUF6Ezr5GVv53zbJSTeh',
-#     'lang': 'en',
-#     'PANWEB': '1'
-# }
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
-#WORKING COOKIES
 cookies = {
     'PANWEB': '1',
-    'browserid': 'JOsoSDqBLH63S57CpkWso6wlIl09rlscogNcktwZ_q-vtjq1tYYDItZH_-M=',
+    'browserid': 'Cy5EXu1Tzj6Tw3JVWDVZG57bcVB3PStNKnFq-eksnn33s0nhe8wctkVEF1g=',
     'lang': 'en',
-    '__bid_n': '196d9168d1d76226be4207',
-    'ndut_fmt': '811C3EF9FEB1A698D45780FF5724B1C3830C0F7B75FD18E35B82A1DD5DB0FFC6',
-    '__stripe_mid': '31fc92f3-a12a-480f-9e44-53f30f08258a75588e',
-    'ndus': 'YdZTyX1peHuimlux_D6dLGQBeHmj0r3M3trkunHB',
-    'csrfToken': 'Dwk1sMVb--fAc6ID1ivmRYvU',
+    '__bid_n': '196d90a7ef6d98c2484207',
+    'ndut_fmt': '1B38B8821B9241CF3C51E9F8141C292725EC2A049FABABB137509082AC94989B',
+    '__stripe_mid': '83eb4165-8c1d-46e8-b54c-4226543a778cc1575f',
+    'ndus': 'YdZTyX1peHuiljk-9FQjnM6F2ajG_vnHH4yOTLWg',
+    'csrfToken': 'sgiVprBuEj979JssZlM4cNXs',
 }
-
-
-
-#WORKING COOKIES
-# cookies = {
-#     'PANWEB': '1',
-#     'browserid': 'p4nVrnlkUVKcnbbJHnIClAhSL5uXs01e-0svx0bm7KHLUB6wIVvCUNGLIpU=',
-#     'lang': 'en',
-#     '__bid_n': '1900b9f02442253dfe4207',
-#     'ndut_fmt': '5E7E5AFA065E159EF56CFE164FCF084C72B603BE3611911C28550443BDC08A4B',
-#     '__stripe_mid': 'b85d61d2-4812-4eeb-8e41-b1efb3fa2a002a54d5',
-#     'ndus': 'YylKpiCteHuiYEqq8n75Tb-JhCqmg0g4YMH03MYD',
-#     'csrfToken': 'zAVdnQAVegC92-ah6pmLf6Dl',
-# }
-
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
@@ -176,7 +148,7 @@ async def format_message(link_data):
 @app.route('/')
 def hello_world():
   #result = bot.get_me()
-  response = {'status': 'success', 'message': 'Working Fully',' Contact': '@GuyXD'}
+  response = {'status': 'success', 'message': 'Working Fully',' Contact': '@ftmdeveloperz'}
   return response
 
 
@@ -203,14 +175,14 @@ async def Api():
 async def help():
     try:
         response = {'Info': "There is Only one Way to Use This as Show Below",
-                    'Example': 'https://teraboxx.vercel.app/api?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA',
-                    'Example2': 'https://teraboxx.vercel.app/api2?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA'}
+                    'Example': 'https://terabox-dl-orcin.vercel.app/api?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA',
+                    'Example2': 'https://terabox-dl-orcin.vercel.app/api2?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA'}
         return jsonify(response)
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         response = {'Info': "There is Only one Way to Use This as Show Below",
-                    'Example': 'https://teraboxx.vercel.app/api?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA',
-                    'Example2': 'https://teraboxx.vercel.app/api2?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA'}
+                    'Example': 'https://terabox-dl-orcin.vercel.app/api?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA',
+                    'Example2': 'https://terabox-dl-orcin.vercel.app/api2?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA'}
         return jsonify(response)
 
 
@@ -298,7 +270,7 @@ async def fetch_download_link_async2(url):
                         file_info = {
                             "file_name": file.get("server_filename"),
                             "link": file.get("dlink"),
-                            "direct_link": direct_download_url,  # Extracted direct download link
+                            "dlink": direct_download_url,  # Extracted direct download link
                             "thumb": file.get("thumbs", {}).get("url3", "https://default_thumbnail.png"),
                             "size": await get_formatted_size_async(file.get("size", 0)),
                             "sizebytes": file.get("size", 0),
