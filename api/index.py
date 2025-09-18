@@ -1,305 +1,189 @@
-from flask import Flask
+from flask import Flask, request, render_template, jsonify, Response, stream_with_context, redirect
 import os
-from flask import request, jsonify
-import aiohttp
-import asyncio
-import logging
-from urllib.parse import parse_qs, urlparse
+import hashlib
+import requests
+from urllib.parse import urlparse, unquote
 
 app = Flask(__name__)
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# In-memory storage (use DB for persistence in production)
+video_storage = {}
 
-cookies = {
-    'PANWEB': '1',
-    'browserid': 'Cy5EXu1Tzj6Tw3JVWDVZG57bcVB3PStNKnFq-eksnn33s0nhe8wctkVEF1g=',
-    'lang': 'en',
-    '__bid_n': '196d90a7ef6d98c2484207',
-    'ndut_fmt': '1B38B8821B9241CF3C51E9F8141C292725EC2A049FABABB137509082AC94989B',
-    '__stripe_mid': '83eb4165-8c1d-46e8-b54c-4226543a778cc1575f',
-    'ndus': 'YdZTyX1peHuiljk-9FQjnM6F2ajG_vnHH4yOTLWg',
-    'csrfToken': 'sgiVprBuEj979JssZlM4cNXs',
-}
+def validate_url(url):
+    """Validate URL to prevent XSS and ensure it's a proper HTTP/HTTPS URL"""
+    try:
+        decoded_url = unquote(url)
+        parsed = urlparse(decoded_url)
+        if parsed.scheme not in ['http', 'https']:
+            return False
+        if not parsed.netloc:
+            return False
+        return True
+    except Exception:
+        return False
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
-    'Accept': '*/*',
-    'Connection': 'keep-alive',
-}
+def generate_video_id(url):
+    """Generate a unique ID for a video URL"""
+    # shorter stable id using md5
+    return hashlib.md5(url.encode()).hexdigest()[:12]
 
+def extract_full_url(request):
+    """Extract the full URL from request, handling truncation issues"""
+    query_string = request.query_string.decode('utf-8')
+    if 'url=' in query_string:
+        url_start = query_string.find('url=') + 4
+        full_url = query_string[url_start:]
+        return unquote(full_url)
+    return None
 
+video_counter = 1
+video_storage = {}  # {id: {"url":..., "filename":...}}
 
-def find_between(string, start, end):
-  start_index = string.find(start) + len(start)
-  end_index = string.find(end, start_index)
-  return string[start_index:end_index]
-
-
-async def fetch_download_link_async(url):
-  try:
-      async with aiohttp.ClientSession(cookies=cookies, headers=headers) as session:
-          async with session.get(url) as response1:
-              response1.raise_for_status()
-              response_data = await response1.text()
-              js_token = find_between(response_data, 'fn%28%22', '%22%29')
-              #print(js_token)
-              log_id = find_between(response_data, 'dp-logid=', '&')
-             # print(log_id)
-
-              if not js_token or not log_id:
-                  return None
-
-              request_url = str(response1.url)
-              surl = request_url.split('surl=')[1]
-              params = {
-                  'app_id': '250528',
-                  'web': '1',
-                  'channel': 'dubox',
-                  'clienttype': '0',
-                  'jsToken': js_token,
-                  'dplogid': log_id,
-                  'page': '1',
-                  'num': '20',
-                  'order': 'time',
-                  'desc': '1',
-                  'site_referer': request_url,
-                  'shorturl': surl,
-                  'root': '1'
-              }
-
-              async with session.get('https://www.1024tera.com/share/list', params=params) as response2:
-                  response_data2 = await response2.json()
-                #   print(response_data2)
-                  #print("res2", response_data2)
-                  if 'list' not in response_data2:
-                      return None
-
-                  if response_data2['list'][0]['isdir'] == "1":
-                      params.update({
-                          'dir': response_data2['list'][0]['path'],
-                          'order': 'asc',
-                          'by': 'name',
-                          'dplogid': log_id
-                      })
-                      params.pop('desc')
-                      params.pop('root')
-
-                      async with session.get('https://www.1024tera.com/share/list', params=params) as response3:
-                          response_data3 = await response3.json()
-                        #   print(response_data3)
-                          #print("res3", response_data3)
-                          if 'list' not in response_data3:
-                              return None
-                          return response_data3['list']
-                  #print(response_data2['list'])
-                  return response_data2['list']
-  except aiohttp.ClientResponseError as e:
-      print(f"Error fetching download link: {e}")
-      return None
-
-
-def extract_thumbnail_dimensions(url: str) -> str:
-    """Extract dimensions from thumbnail URL's size parameter"""
-    parsed = urlparse(url)
-    params = parse_qs(parsed.query)
-    size_param = params.get('size', [''])[0]
-    
-    # Extract numbers from size format like c360_u270
-    if size_param:
-        parts = size_param.replace('c', '').split('_u')
-        if len(parts) == 2:
-            return f"{parts[0]}x{parts[1]}"
-    return "original"
-
-
-async def get_formatted_size_async(size_bytes):
-  try:
-      size_bytes = int(size_bytes)
-      size = size_bytes / (1024 * 1024) if size_bytes >= 1024 * 1024 else (
-          size_bytes / 1024 if size_bytes >= 1024 else size_bytes
-      )
-      unit = "MB" if size_bytes >= 1024 * 1024 else ("KB" if size_bytes >= 1024 else "bytes")
-
-      return f"{size:.2f} {unit}"
-  except Exception as e:
-      print(f"Error getting formatted size: {e}")
-      return None
-
-async def format_message(link_data):
-  # Process thumbnails
-    thumbnails = {}
-    if 'thumbs' in link_data:
-        for key, url in link_data['thumbs'].items():
-            if url:  # Skip empty URLs
-                dimensions = extract_thumbnail_dimensions(url)
-                thumbnails[dimensions] = url
-#   if link_data
-    file_name = link_data["server_filename"]
-    file_size = await get_formatted_size_async(link_data["size"])
-    download_link = link_data["dlink"]
-    sk = {
-      'Title': file_name,
-      'Size': file_size,
-      'Direct Download Link': download_link,
-      'Thumbnails': thumbnails
-    }
-    return sk
-
+def store_video_url(url, filename=None):
+    global video_counter
+    vid = video_counter
+    video_storage[vid] = {"url": url, "filename": filename or "video.mp4"}
+    video_counter += 1
+    return vid
 @app.route('/')
-def hello_world():
-  #result = bot.get_me()
-  response = {'status': 'success', 'message': 'Working Fully',' Contact': '@ftmdeveloperz'}
-  return response
+def home():
+    return '''
+    <html>
+    <head>
+        <title>Video Player & Download API</title>
+        <style>
+            body { background: #000; color: #fff; font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            h1 { color: #4A90E2; }
+            .endpoint { background: #1a1a1a; padding: 20px; margin: 20px auto; border-radius: 8px; max-width: 800px; }
+            code { background: #333; padding: 5px 10px; border-radius: 4px; color: #4A90E2; }
+            a { color: #7dc3ff; }
+        </style>
+    </head>
+    <body>
+        <h1>Video Player & Download API</h1>
+        <div class="endpoint">
+            <h3>Player Endpoint</h3>
+            <p>Open player with long URL: <code>/player?url=VIDEO_LINK</code></p>
+            <p>Open player with id: <code>/player?vid=VIDEO_ID</code></p>
+        </div>
+        <div class="endpoint">
+            <h3>Shorten Endpoint</h3>
+            <p>Create a short link: <code>/shorten?url=VIDEO_LINK</code> (GET) or POST JSON <code>{"url":"..."}</code></p>
+        </div>
+        <div class="endpoint">
+            <h3>Short Link</h3>
+            <p>Short link format: <code>/s/&lt;VIDEO_ID&gt;</code> (redirects to player)</p>
+        </div>
+    </body>
+    </html>
+    '''
+@app.route('/shorten', methods=['GET','POST'])
+def shorten():
+    long_url = None
+    filename = None
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or {}
+        long_url = data.get('url')
+        filename = data.get('name')
+    if not long_url:
+        long_url = extract_full_url(request) or request.args.get('url')
+        filename = request.args.get('name')
+
+    if not long_url:
+        return jsonify({"success": False, "error": "No URL provided."}), 400
+    if not validate_url(long_url):
+        return jsonify({"success": False, "error": "Invalid URL."}), 400
+
+    vid = store_video_url(long_url, filename)
+    host = request.host_url.rstrip('/')
+    
+    short_url = f"{host}/{filename or 'video.mp4'}/download/{vid}"
+    player_url = f"{host}/player?vid={vid}&name={filename or 'video.mp4'}"
+    cdn_url = f"{host}/cdn/{vid}"
+
+    return jsonify({
+        "success": True,
+        "video_id": vid,
+        "short_url": short_url,
+        "player_url": player_url,
+        "cdn_url": cdn_url,
+        "filename": filename or "video.mp4"
+    })
+
+@app.route('/s/<video_id>')
+def short_redirect(video_id):
+    # Redirect to player so opening short link launches the player
+    return redirect(f"/player?vid={video_id}", code=302)
+
+@app.route('/<filename>/download/<int:video_id>')
+def download_or_play(filename, video_id):
+    """
+    Short link format: /filename/download/video_id
+    Instead of direct download, render the player with the stored video URL.
+    """
+    if video_id not in video_storage:
+        return jsonify({"error": "Video not found"}), 404
+
+    video_info = video_storage[video_id]
+    video_url = video_info["url"]
+    filename = filename or video_info.get("filename", "video.mp4")
+
+    # Render player.html instead of direct download
+    return render_template('player.html', video_url=video_url, original_url=video_url, filename=filename)
 
 
-@app.route(rule='/api', methods=['GET'])
-async def Api():
-  try:
-      url = request.args.get('url', 'No URL Provided')
-      logging.info(f"Received request for URL: {url}")
-      link_data = await fetch_download_link_async(url)
-      if link_data:
-          tasks = [format_message(item) for item in link_data]
-          formatted_message = await asyncio.gather(*tasks)
-        #   formatted_message = await format_message(link_data[0])
-          logging.info(f"Formatted message: {formatted_message}")
-      else:
-          formatted_message = None
-      response = { 'ShortLink': url, 'Extracted Info': formatted_message,'status': 'success'}
-      return jsonify(response)
-  except Exception as e:
-      logging.error(f"An error occurred: {e}")
-      return jsonify({'status': 'error', 'message': str(e), 'Link': url})
+@app.route('/api')
+def api():
+    video_url = extract_full_url(request) or request.args.get('url')
+    if not video_url:
+        return jsonify({"error": "No URL provided. Use ?url=VIDEO_LINK"}), 400
+    if not validate_url(video_url):
+        return jsonify({"error": "Invalid URL. Only HTTP/HTTPS URLs are allowed."}), 400
+    return jsonify({"success": True, "download_link": video_url})
 
-@app.route(rule='/help', methods=['GET'])
-async def help():
+@app.route('/cdn/<video_id>')
+def stream_video(video_id):
+    if video_id not in video_storage:
+        return jsonify({"error": "Video not found"}), 404
+
+    original_url = video_storage[video_id]
     try:
-        response = {'Info': "There is Only one Way to Use This as Show Below",
-                    'Example': 'https://terabox-dl-orcin.vercel.app/api?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA',
-                    'Example2': 'https://terabox-dl-orcin.vercel.app/api2?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA'}
-        return jsonify(response)
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-        response = {'Info': "There is Only one Way to Use This as Show Below",
-                    'Example': 'https://terabox-dl-orcin.vercel.app/api?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA',
-                    'Example2': 'https://terabox-dl-orcin.vercel.app/api2?url=https://terafileshare.com/s/1_1SzMvaPkqZ-yWokFCrKyA'}
-        return jsonify(response)
+        range_header = request.headers.get('Range')
+        headers = {
+            'User-Agent': request.headers.get('User-Agent', 'Mozilla/5.0'),
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'identity',
+            'Connection': 'keep-alive'
+        }
+        if range_header:
+            headers['Range'] = range_header
 
+        response = requests.get(original_url, headers=headers, stream=True, timeout=30)
 
+        def generate():
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    yield chunk
 
+        response_headers = {
+            'Content-Type': response.headers.get('Content-Type', 'video/mp4'),
+            'Accept-Ranges': 'bytes',
+            'Cache-Control': 'public, max-age=3600'
+        }
+        content_length = response.headers.get('Content-Length')
+        if content_length:
+            response_headers['Content-Length'] = content_length
 
-async def get_formatted_size_async(size_bytes):
-    try:
-        size_bytes = int(size_bytes)
-        size = size_bytes / (1024 * 1024) if size_bytes >= 1024 * 1024 else (
-            size_bytes / 1024 if size_bytes >= 1024 else size_bytes
+        flask_response = Response(
+            stream_with_context(generate()),
+            status=response.status_code,
+            headers=response_headers
         )
-        unit = "MB" if size_bytes >= 1024 * 1024 else ("KB" if size_bytes >= 1024 else "bytes")
-        return f"{size:.2f} {unit}"
-    except Exception as e:
-        print(f"Error getting formatted size: {e}")
-        return None
+        if 'Content-Range' in response.headers:
+            flask_response.headers['Content-Range'] = response.headers['Content-Range']
 
+        return flask_response
 
-async def fetch_download_link_async2(url):
-    try:
-        async with aiohttp.ClientSession(cookies=cookies, headers=headers) as session:
-            async with session.get(url) as response1:
-                response1.raise_for_status()
-                response_data = await response1.text()
-                
-                # Extract jsToken & logid
-                js_token = find_between(response_data, 'fn%28%22', '%22%29')
-                log_id = find_between(response_data, 'dp-logid=', '&')
-
-                if not js_token or not log_id:
-                    return None
-
-                request_url = str(response1.url)
-                print(request_url)
-                surl = request_url.split('surl=')[1]
-                print(surl)
-
-                params = {
-                    'app_id': '250528',
-                    'web': '1',
-                    'channel': 'dubox',
-                    'clienttype': '0',
-                    'jsToken': js_token,
-                    'dplogid': log_id,
-                    'page': '1',
-                    'num': '20',
-                    'order': 'time',
-                    'desc': '1',
-                    'site_referer': request_url,
-                    'shorturl': surl,
-                    'root': '1'
-                }
-
-                async with session.get('https://www.1024tera.com/share/list', params=params) as response2:
-                    response_data2 = await response2.json()
-
-                    if 'list' not in response_data2:
-                        return None
-
-                    files = response_data2['list']
-
-                    # If it's a directory, fetch contents
-                    if files[0]['isdir'] == "1":
-                        params.update({
-                            'dir': files[0]['path'],
-                            'order': 'asc',
-                            'by': 'name',
-                            'dplogid': log_id
-                        })
-                        params.pop('desc')
-                        params.pop('root')
-
-                        async with session.get('https://www.1024tera.com/share/list', params=params) as response3:
-                            response_data3 = await response3.json()
-                            if 'list' not in response_data3:
-                                return None
-                            files = response_data3['list']
-
-                    # Fetch direct download links for each file
-                    file_data = []
-                    for file in files:
-                        async with session.head(file["dlink"], headers=headers) as direct_link_response:
-                            direct_download_url = direct_link_response.headers.get("location")
-
-                        file_info = {
-                            "file_name": file.get("server_filename"),
-                            "link": file.get("dlink"),
-                            "dlink": direct_download_url,  # Extracted direct download link
-                            "thumb": file.get("thumbs", {}).get("url3", "https://default_thumbnail.png"),
-                            "size": await get_formatted_size_async(file.get("size", 0)),
-                            "sizebytes": file.get("size", 0),
-                        }
-                        file_data.append(file_info)
-
-                    return file_data
-
-    except aiohttp.ClientResponseError as e:
-        print(f"Error fetching download link: {e}")
-        return None
-
-
-
-@app.route(rule='/api2', methods=['GET'])
-async def Api2():
-    try:
-        url = request.args.get('url', 'No URL Provided')
-        logging.info(f"Received request for URL: {url}")
-
-        link_data = await fetch_download_link_async2(url)
-
-        if link_data:
-            response = {'ShortLink': url, 'Extracted Files': link_data, 'status': 'success'}
-        else:
-            response = {'status': 'error', 'message': 'No files found', 'ShortLink': url}
-
-        return jsonify(response)
-
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-        return jsonify({'status': 'error', 'message': str(e), 'Link': url})
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Failed to stream video: {str(e)}"}), 500
