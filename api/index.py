@@ -121,9 +121,6 @@ def download_or_play(filename, video_id):
     Short link format: /filename/download/video_id
     Instead of direct download, render the player with the stored video URL.
     """
-    if video_id not in video_storage:
-        return jsonify({"error": "Video not found"}), 404
-
     video_info = video_storage[video_id]
     video_url = video_info["url"]
     filename = filename or video_info.get("filename", "video.mp4")
