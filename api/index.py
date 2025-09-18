@@ -121,6 +121,11 @@ def download_or_play(filename, video_id):
     Short link format: /filename/download/video_id
     Instead of direct download, render the player with the stored video URL.
     """
+    if video_id not in video_storage:
+        video_url = "https://effective-zebra-wqr496wpv6p3g6vx.github.dev/"
+        filename = "Expired"
+        return render_template('player.html', video_url=video_url, original_url=video_url, filename=filename)
+
     video_info = video_storage[video_id]
     video_url = video_info["url"]
     filename = filename or video_info.get("filename", "video.mp4")
