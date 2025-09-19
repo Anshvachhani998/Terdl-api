@@ -77,6 +77,39 @@ def home():
     </body>
     </html>
     '''
+
+
+@app.route("/generate", methods=["POST"])
+def generate_m3u8():
+    """
+    Expect JSON:
+    {
+        "video": "https://rr1---sn-ci5gup-qxae6.googlevideo.com/videoplayback?expire=1758285271&ei=d_nMaN_ENpKX4t4P-Yrt0Qk&ip=122.180.245.197&id=o-AGrSIeJnn9PetaVTgEKzbKxw2rHBt17X9OzEV3KygyHG&itag=278&aitags=133%2C134%2C135%2C136%2C160%2C242%2C243%2C244%2C247%2C278%2C298%2C299%2C302%2C303%2C308%2C315%2C394%2C395%2C396%2C397%2C398%2C399%2C400%2C401&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1758263671%2C&mh=43&mm=31%2C26&mn=sn-ci5gup-qxae6%2Csn-cvhelnls&ms=au%2Conr&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=1755000&bui=ATw7iSXZ2q1AclB6b0t9cy4n1CLFdMUP0Ha9YhspGFsML2dFyzpCtdXjh84UI8DwTTooornjDesX0cOy&spc=hcYD5b_LkwV4&vprv=1&svpuc=1&mime=video%2Fwebm&ns=5hQPH7bEqpPu99TCyiYxE7QQ&rqh=1&gir=yes&clen=8768624&dur=899.533&lmt=1757154593499384&mt=1758263119&fvip=5&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=TVHTML5_SIMPLY&sefc=1&txp=4537534&n=J_PlBKkLqJyXIQ&sparams=expire%2Cei%2Cip%2Cid%2Caitags%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cns%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJfQdSswRgIhAP71z-DwnEaaqpd__lq5qVpM5pAdWjqaUp3D8CLt98mMAiEA6NHScg6pTdWWVWas9wzGKaWDKx1EUJgim3ih4gwAFa8%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRQIhANAF2hyJmOSV_f_UpBW22dZ3xEnkwPy7FX6v1Hu1Pb63AiAqDPA-X9Iu9daPNlwRTm3zKQi4q85Jy6xNztDyU7GEuw%3D%3D",
+        "audio": "https://rr1---sn-ci5gup-qxae6.googlevideo.com/videoplayback?expire=1758285241&ei=WfnMaJnqGrmPssUP-YjH4AU&ip=122.180.245.197&id=o-AGL3myi-5lFKUYvQLAG2DssLaxEWR5b9RR1Gxgt2P7ju&itag=250&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1758263641%2C&mh=43&mm=31%2C26&mn=sn-ci5gup-qxae6%2Csn-cvh7kn6l&ms=au%2Conr&mv=m&mvi=1&pl=24&rms=au%2Cau&initcwndbps=1755000&bui=ATw7iSUtNHFUA87sMfrP9l9Zdsiy1eRV9MhBKfokK2M3mSpVdHEHVqb2WneXkU7E5CuZLKQWUCSzPDny&spc=hcYD5cQ03LdM&vprv=1&svpuc=1&xtags=drc%3D1&mime=audio%2Fwebm&ns=C2kT1l3C9SVg22CsW4P7F3sQ&rqh=1&gir=yes&clen=7771949&dur=899.561&lmt=1757143656780220&mt=1758263119&fvip=3&keepalive=yes&fexp=51552689%2C51565116%2C51565682%2C51580968&c=TVHTML5_SIMPLY&sefc=1&txp=4532534&n=_FBwBI8yP5QJUw&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cxtags%2Cmime%2Cns%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJfQdSswRQIgaywNnxHn5pGHgi4d-AoNVew4P2zempIB59wnMtitbN8CIQDEWZG6_3NvOowPSNiy1HsGhsDSEC-sqqEYBFuEzTzKqQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhALvMFVlOgokQxfSVTlPjP4Y3fwhDig37O25SJxXHURx7AiEAs4wwlu6ZcL5HMxlCfRZNNtLVnq1_oc6a1JSazVzQAos%3D"
+    }
+    """
+    data = request.json
+    video_url = data.get("video")
+    audio_url = data.get("audio")
+
+    if not video_url or not audio_url:
+        return jsonify({"error": "video and audio links required"}), 400
+
+    # Simple master playlist
+    m3u8_content = f"""#EXTM3U
+#EXT-X-VERSION:3
+
+# Audio track
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio_group",NAME="English",DEFAULT=YES,AUTOSELECT=YES,URI="{audio_url}"
+
+# Video stream
+#EXT-X-STREAM-INF:BANDWIDTH=2000000,RESOLUTION=1280x720,AUDIO="audio_group"
+{video_url}
+"""
+
+    # Return as plain text with correct MIME type
+    return Response(m3u8_content, mimetype="application/vnd.apple.mpegurl")
+    
 @app.route('/shorten', methods=['GET','POST'])
 def shorten():
     long_url = None
