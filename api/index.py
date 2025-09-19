@@ -198,15 +198,18 @@ from flask import Flask, request, jsonify, url_for
 import os
 import uuid
 
-# Temp folder for storing .m3u8 files
+
 TEMP_FOLDER = "temp"
 os.makedirs(TEMP_FOLDER, exist_ok=True)
 
-# Route to serve m3u8 file
 @app.route("/temp/<filename>")
 def get_m3u8(filename):
-    return app.send_static_file(os.path.join(TEMP_FOLDER, filename))
-    
+    # file check
+    file_path = os.path.join(TEMP_FOLDER, filename)
+    if not os.path.isfile(file_path):
+        return "File not found", 404
+    return send_from_directory(TEMP_FOLDER, filename, mimetype="application/vnd.apple.mpegurl")
+
 
 @app.route("/generate", methods=["GET"])
 def generate_m3u8():
